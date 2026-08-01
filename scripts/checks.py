@@ -54,6 +54,20 @@ def strip_comments(src):
                     i += 1
                 elif c == '"':
                     break
+        elif (depth == 0 and src[i] == "'"
+              and (i == 0 or not (src[i - 1].isalnum() or src[i - 1] in "_'!?₀₁₂₃₄₅₆₇₈₉"))):
+            # A char literal ('"', '\'', '-'): consume it whole so a quote
+            # or dash inside cannot desynchronize the string and comment
+            # tracking. A prime on an identifier (`foo'`) never enters this
+            # branch: the preceding character is an identifier character.
+            out.append(src[i])
+            i += 1
+            if i < n and src[i] == "\\" and i + 1 < n:
+                out.append(src[i]); out.append(src[i + 1]); i += 2
+            elif i < n:
+                out.append(src[i]); i += 1
+            if i < n and src[i] == "'":
+                out.append(src[i]); i += 1
         elif depth == 0 and two == "--":
             j = src.find("\n", i)
             i = n if j < 0 else j

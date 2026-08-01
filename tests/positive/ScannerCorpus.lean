@@ -34,3 +34,12 @@ def sorryAxiom (stopped : Nat) : Nat := stopped
 /-- `+ native…` where the word continues past `native` is arithmetic, not a
 `decide` config flag. -/
 def unstoppable (nativeish : Nat) : Nat := nativeish + nativeish
+
+/-- Char literals must not desynchronize the scanner: a quote, a dash, and
+an escaped quote as `Char`s, with an honest string after them. Zero
+findings required. -/
+def charLiterals : Char × Char × Char := ('"', '-', '\'')
+
+/-- A string after a char literal is still tracked as a string: the `--`
+inside it is content, not a comment opener, and nothing after it hides. -/
+def stringAfterChar : Char × String := ('"', "a -- b, no tokens")

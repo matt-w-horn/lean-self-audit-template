@@ -531,6 +531,7 @@ def negativeFixtures : List (String × String) :=
 
 def scannerFixtures : List String :=
   ["ExampleSorryFixture.lean", "StringSorryFixture.lean",
+   "CharLiteralSorryFixture.lean",
    "SorryAxFixture.lean", "StopFixture.lean", "NativePlusFixture.lean"]
 
 unsafe def main (args : List String) : IO UInt32 := do
