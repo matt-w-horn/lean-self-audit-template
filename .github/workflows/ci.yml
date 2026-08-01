@@ -59,3 +59,18 @@ jobs:
       # would live in scripts/nolints-style.txt, which stays empty.
       - name: lint-style
         run: lake exe lint-style
+
+  # Layers 2 and 3 of the self-test: the template must instantiate under
+  # a different name with every gate still green, and the instantiated
+  # gates must REJECT an injected sorry, a doctored lock line, and a
+  # docstring edit under a recorded verdict. tools/selftest.sh.
+  instantiation:
+    name: self-test layers 2-3 (rename + gates bite)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: leanprover/lean-action@v1
+        with:
+          build-args: "--wfail"
+      - name: rename, rebuild, inject, assert rejection
+        run: bash tools/selftest.sh
