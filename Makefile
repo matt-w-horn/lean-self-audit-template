@@ -77,6 +77,11 @@ scope:
 # for, so both are excluded), and any touched linter line in lakefile.toml,
 # where removing an option silences it just as surely as a set_option.
 silencing-guard:
+	@range="$(GUARD_DIFF)"; base=$${range%%...*}; \
+	if [ -n "$$base" ] && [ "$$base" != "$$range" ]; then \
+	  git rev-parse --verify --quiet "$$base^{commit}" >/dev/null || { \
+	    echo "silencing-guard: cannot resolve diff base '$$base' in range '$$range'" >&2; exit 1; }; \
+	fi
 	@hits=$$(git diff $(GUARD_DIFF) -U0 -- 'Template.lean' 'Template/*.lean' 'Template/**/*.lean' 'tests/positive/*.lean' \
 	  | grep -E '^\+[^+]' \
 	  | grep -E 'set_option +(linter|debug)\.|set_option +[A-Za-z.]*maxHeartbeats|@\[nolint|@\[implemented_by|@\[extern|^\+ *((private|protected|public|noncomputable) +)*(axiom|unsafe|partial) '; true); \
