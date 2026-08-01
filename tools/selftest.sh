@@ -10,6 +10,17 @@
 # assumes has already happened.
 set -eu
 SRC=$(cd "$(dirname "$0")/.." && pwd)
+# The layers below are keyed to the template's own toy content (the
+# Hello module, its lock rows, its docstrings). In an adopted project —
+# anything renamed away from Template — they would be permanently red,
+# so the script exits neutral there. Delete the CI job (ci.yml:
+# instantiation) and this script once your own modules replace the toy
+# library; until then the neutral exit keeps CI green.
+NAME=$(sed -n 's/^name = "\(.*\)"$/\1/p' "$SRC/lakefile.toml" | head -1)
+if [ "$NAME" != "Template" ]; then
+  echo "selftest: project is '$NAME', not Template — the layer-2/3 self-test is keyed to the template's toy content; exiting neutral (delete the instantiation CI job and tools/selftest.sh in adopted projects)."
+  exit 0
+fi
 WORK=$(mktemp -d)
 trap 'rm -rf "$WORK"' EXIT INT TERM
 COPY="$WORK/instance"

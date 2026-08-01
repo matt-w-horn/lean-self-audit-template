@@ -80,6 +80,9 @@ alongside gitleaks and a staged-source proof-token scan.
    `TemplateTest/Gate.lean`) — `lake test` enforces this.
 3. Regenerate `tests/statements.lock` and replace the ledger entries in
    `TemplateTest/Ledger.lean` as your declarations land.
+4. The `instantiation` CI job (layers 2-3 of the self-test) is keyed to
+   the toy content and exits neutral once the project is renamed; delete
+   that job and `tools/selftest.sh` when the toy module goes.
 
 ## What routine changes cost
 
