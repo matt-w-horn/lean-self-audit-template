@@ -1,0 +1,8 @@
+-- Claims ledger: one verdict per declaration, written only by
+-- scripts/claims.py after a blinded docstring-vs-statement review.
+-- The claims gate in `lake test` compares the hashes below against the
+-- manifest; editing a statement, a docstring, or a direct dependency's
+-- docstring invalidates the row. In `failing` mode a missing or stale row
+-- fails the build; `advisory` prints findings only (pre-bootstrap).
+mode: advisory
+

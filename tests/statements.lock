@@ -1,0 +1,20 @@
+-- Statement lock: elaborated types (and definition value hashes) of
+-- every hand-written declaration under `Template`, printed by
+-- `lake exe templateTest --update-lock`. Proof bodies of theorems are
+-- deliberately not frozen. A diff in this file is a deliberate
+-- statement-level change, never a routine one.
+
+#### Template.docBlameThmEnabled : def
+  Batteries.Tactic.Lint.Linter
+  value-hash 61d1b116eb14b88a
+
+#### Template.explicitVarsOfIffEnabled : def
+  Batteries.Tactic.Lint.Linter
+  value-hash 3deaf6c01b1ffda0
+
+#### Template.hello_world : theorem
+  1 + 1 = 2
+
+#### Template.templateOmittedTokens : def
+  List String
+  value-hash 8487644d3f624bf

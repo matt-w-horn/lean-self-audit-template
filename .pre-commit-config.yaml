@@ -1,0 +1,52 @@
+# Local guards — secrets, proof tokens, and the full verification ritual,
+# all at commit time. One-time setup:
+#
+#     brew install pre-commit       # or: pipx install pre-commit
+#     pre-commit install
+#
+# Run on demand with: pre-commit run --all-files
+repos:
+  - repo: https://github.com/gitleaks/gitleaks
+    rev: v8.30.1
+    hooks:
+      - id: gitleaks
+  - repo: local
+    hooks:
+      # Anti-silencing gate: a staged diff that adds a gate-silencing token
+      # (set_option linter./debug./maxHeartbeats, @[nolint, an axiom/unsafe/
+      # partial declaration, @[implemented_by, @[extern) or touches a linter
+      # line in lakefile.toml needs a deliberate sign-off — the linter
+      # configuration is only as strong as the review gate on changes to it.
+      # Sign off with SKIP=silencing-guard when the change is meant.
+      - id: silencing-guard
+        name: silencing-guard (no silent gate changes)
+        entry: make silencing-guard
+        language: system
+        pass_filenames: false
+        always_run: true
+      # The zero-sorry claim, enforced on staged sources. `lake build`'s axiom
+      # sweep cannot do this: Lean never adds an `example` to the environment,
+      # so a `sorry` inside one builds green and the audit count does not move
+      # (verified 2026-07-24). Source-level scanning is the only check that
+      # reaches every declaration kind. Fast — no build, no Mathlib.
+      # TemplateTest/ is excluded like tests/negative/: the test driver names
+      # the tokens it scans for, so it can never pass a source scan of itself.
+      # Library coverage is unchanged — every Template/** module is scanned.
+      - id: proof-tokens
+        name: proof-tokens (no sorry/admit/native_decide)
+        entry: python3 scripts/checks.py --scan
+        language: system
+        files: \.lean$
+        exclude: ^(tests/negative|TemplateTest)/
+      # The full verification ritual — build, lint, lint-style, test, stamp
+      # — on every commit. Incremental `lake build` keeps it cheap when
+      # little changed. Escape hatches, in the open by design:
+      #   SKIP=verify git commit …    git commit --no-verify
+      # A skipped verify means run `make verify` afterwards, not shrink the
+      # escape hatch.
+      - id: verify
+        name: verify (make verify - build + lint + test)
+        entry: make verify
+        language: system
+        pass_filenames: false
+        always_run: true
