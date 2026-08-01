@@ -2,9 +2,9 @@
 """The claims ledger's only writer, and its shape validator.
 
 `tests/claims.lock` records one verdict per declaration: that a blinded
-referee compared the docstring against the elaborated statement
-(`supported`), or that Matt overruled a referee (`accepted`, note
-required). The test driver's claims gate compares the ledger's hashes
+reviewer compared the docstring against the elaborated statement
+(`supported`), or that the maintainer overruled a reviewer (`accepted`,
+note required). The test driver's claims gate compares the ledger's hashes
 against the manifest and fails on missing, stale, or orphan rows; it never
 writes. All writes go through `record` here, which copies the three hashes
 from `.verify/manifest.json` — the hashes are computed only in Lean
@@ -29,7 +29,7 @@ VERDICTS = ("supported", "accepted")
 
 HEADER = """-- Claims ledger: one verdict per declaration, written only by
 -- scripts/claims.py after a blinded docstring-vs-statement review
--- (design: template-paper/source/claims-review-design.md). The claims
+-- (contract: claims-contract.md at the repo root). The claims
 -- gate in `lake test` compares the hashes below against the manifest;
 -- editing a statement, a docstring, or a direct dependency's docstring
 -- invalidates the row. In `failing` mode a missing or stale row fails
