@@ -168,17 +168,26 @@ leanchecker:
 # at the same time. Pins: lean4export at its v4.32.0-toolchain rev with
 # this repo's lean-toolchain copied over it (the export runtime must
 # match the oleans it reads, and a patch release is source-compatible);
-# nanoda_lib at the Lean Kernel Arena's rev. The config whitelists
-# exactly the three classical axioms and hard-errors on any other; the
-# nat/string kernel extensions are nanoda's own implementations, which
-# is the point. Checkouts, config, and the export live under
-# .verify/watchers/ (gitignored). The export covers the full dependency
-# cone — Mathlib included, unlike leanchecker's trusted imports — so
-# this is a heavyweight target: run it where compute is cheap (CI, a
-# build host), not per commit.
+# nanoda_lib at the Lean Kernel Arena's rev. Axiom policy is
+# deliberately open (the Arena's own setting): the export necessarily
+# declares Lean core's own axioms (trustCompiler, ofReduceBool, sorryAx)
+# and core meta-code references them, so a whitelist either hard-errors
+# on the declarations or panics on the dangling references — both
+# demonstrated 2026-08-01. Library axiom discipline is
+# #axiom_budget_all's job, per declaration at build time; this leg
+# contributes independent TYPE-CHECKING, and the nat/string kernel
+# extensions are nanoda's own implementations, which is the point.
+# Checkouts, config, and the export live OUTSIDE the working tree,
+# under ~/.cache: anything that treats the tree as disposable (a clean
+# checkout, a sync, a worktree) clobbers a nested clone's .git, after
+# which git commands inside it silently answer for the enclosing repo
+# instead. The export covers the full dependency cone — Mathlib
+# included, unlike leanchecker's trusted imports — so this is a
+# heavyweight target: run it where compute is cheap (CI, a build
+# host), not per commit.
 LEAN4EXPORT_REV := 4e7915201d3f9f04470d9eae002fa695f7cdc589
 NANODA_REV := ddfac2bf5a7b56cb46e141494427ff3dd55963c7
-WATCHERS := .verify/watchers
+WATCHERS := $(HOME)/.cache/Template-watchers
 
 watcher-tools:
 	@mkdir -p $(WATCHERS)
@@ -187,19 +196,20 @@ watcher-tools:
 	fi
 	@cd $(WATCHERS)/lean4export && git fetch -q origin && git checkout -q $(LEAN4EXPORT_REV)
 	@cp lean-toolchain $(WATCHERS)/lean4export/lean-toolchain
-	@cd $(WATCHERS)/lean4export && lake build 2>&1 | tail -1
+	@set -o pipefail; cd $(WATCHERS)/lean4export && lake build 2>&1 | tail -1
 	@if [ ! -d $(WATCHERS)/nanoda_lib ]; then \
 	  git clone -q https://github.com/ammkrn/nanoda_lib $(WATCHERS)/nanoda_lib; \
 	fi
 	@cd $(WATCHERS)/nanoda_lib && git fetch -q origin && git checkout -q $(NANODA_REV)
-	@cd $(WATCHERS)/nanoda_lib && cargo build --release 2>&1 | tail -1
+	@set -o pipefail; cd $(WATCHERS)/nanoda_lib \
+	  && PATH="$$HOME/.cargo/bin:$$PATH" cargo build --release 2>&1 | tail -1
 	@printf '%s\n' \
 	  '{' \
 	  '  "use_stdin": true,' \
 	  '  "nat_extension": true,' \
 	  '  "string_extension": true,' \
-	  '  "permitted_axioms": ["propext", "Classical.choice", "Quot.sound"],' \
-	  '  "unpermitted_axiom_hard_error": true,' \
+	  '  "unsafe_permit_all_axioms": true,' \
+	  '  "unpermitted_axiom_hard_error": false,' \
 	  '  "print_success_message": true,' \
 	  '  "num_threads": 4' \
 	  '}' > $(WATCHERS)/nanoda-config.json
@@ -207,8 +217,10 @@ watcher-tools:
 
 nanoda: watcher-tools
 	@echo "nanoda: exporting the Template cone (Mathlib included)"
-	lake env $(WATCHERS)/lean4export/.lake/build/bin/lean4export Template > $(WATCHERS)/export.ndjson
-	@wc -c < $(WATCHERS)/export.ndjson | awk '{printf "nanoda: export is %d bytes\n", $$1}'
+	mkdir -p $(WATCHERS) && lake env $(WATCHERS)/lean4export/.lake/build/bin/lean4export Template > $(WATCHERS)/export.ndjson
+	@test -s $(WATCHERS)/export.ndjson \
+	  || { echo "nanoda: export is missing or empty" >&2; exit 1; }
+	@set -o pipefail; wc -c < $(WATCHERS)/export.ndjson | awk '{printf "nanoda: export is %d bytes\n", $$1}'
 	@# Self-calibration on every run: a checker that accepts a corrupted
 	@# export inspects nothing, so corrupt a copy (every Nat reference
 	@# becomes Bool) and require rejection before the real verdict counts.
