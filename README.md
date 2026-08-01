@@ -1,9 +1,19 @@
 # Lean formalization template
 
-A template for a Lean 4 + Mathlib library whose build fails when its
-honesty claims stop being true. Fork it, rename `Template` to your
-library's name, and replace `Template/Hello.lean` with your first real
-module.
+A template for a Lean 4 + Mathlib library with two tiers of honesty
+gates: a kernel tier that fails the build when a mechanical claim stops
+being true (a `sorry`, a stray axiom, statement drift, an uncovered
+declaration), and a review tier that records docstring-vs-statement
+verdicts and reports when a recorded verdict goes stale under a
+docstring or statement change. Fork it, run
+`python3 tools/rename.py YourLib`, and replace `Template/Hello.lean`
+with your first real module.
+
+Two clarifications up front. Statement locks are golden files — the new
+parts are the claims ledger, the coverage gate, and gates tested
+against constructed evasions. And this is a template rather than a Lake
+plugin because the gates are project-entangled Lean and CI; a plugin
+can come later.
 
 ## The gates, in two tiers
 
@@ -70,6 +80,27 @@ alongside gitleaks and a staged-source proof-token scan.
    `TemplateTest/Gate.lean`) — `lake test` enforces this.
 3. Regenerate `tests/statements.lock` and replace the ledger entries in
    `TemplateTest/Ledger.lean` as your declarations land.
+
+## What routine changes cost
+
+- **A statement change** is deliberate by design: the lock fails, you
+  re-record with `lake exe templateTest --update-lock`, and any claims
+  rows over the changed statements go stale (re-review or re-record
+  them through `scripts/claims.py`).
+- **A Mathlib bump** rebuilds the world and re-elaborates every
+  statement; where printed types shift, the lock diff is your exact
+  review list.
+- **Escape hatches are open by design**: `SKIP=verify git commit` and
+  `--no-verify` skip the pre-commit ritual; a skipped verify means run
+  `make verify` afterward, and the staged-source proof-token scan still
+  runs either way.
+
+## Beside the neighbors
+
+[LeanProject](https://github.com/pitmonticone/LeanProject) covers
+project setup, build, and publishing; blueprint tooling covers progress
+toward a plan. This template covers drift — statements, coverage, and
+prose staying what they were verified to be. Use them together.
 
 ## License
 
