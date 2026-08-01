@@ -3,7 +3,7 @@
 # Escape hatches, in the open by design: SKIP=verify git commit, or
 # --no-verify; a skipped verify means `make verify` afterwards, not a
 # smaller escape hatch. Mechanical stages only — the two semantic passes
-# in scripts/CLAUDE.md follow a green run, scoped by
+# in scripts/README.md follow a green run, scoped by
 # .verify/changed_lean.txt. Stages fail fast; logs land in .verify/.
 
 SHELL := /bin/bash
@@ -66,7 +66,7 @@ scope:
 	if [ -z "$$snap" ]; then snap=$$(git rev-parse HEAD); fi; \
 	echo "$$snap" > .verify/stamp; \
 	echo "verify: PASS — stamped $$snap"; \
-	echo "verify: mechanical stages green; run the two semantic passes in scripts/CLAUDE.md over .verify/changed_lean.txt"
+	echo "verify: mechanical stages green; run the two semantic passes in scripts/README.md over .verify/changed_lean.txt"
 
 # Anti-silencing gate, run on every commit before the ritual: a diff
 # that adds a gate-silencing token to the library needs a deliberate
