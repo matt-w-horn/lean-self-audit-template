@@ -429,18 +429,18 @@ def importsOf (file : FilePath) : IO (Array Name) := do
   return header.imports.map (·.module)
 
 /-- The subject directories of `Template/`, in dependency order: no import
-may flow backwards through this list. Two entries are placed by the DAG
-rather than by subject. `Dynamics` follows `Queueing` because `Calculus`
-reads the M/M/1 gain, and `Stack` follows `Loop` because `Star` quantifies
-over loop signatures. The top-level modules — `Basic`, `Lint`, `AxiomAudit`
-— are infrastructure and sit outside the order. -/
+may flow backwards through this list. Adoption-editable: the template's
+modules are all top-level, so this two-entry example order checks zero
+edges today; replace it with your library's subject directories as they
+appear, and the stage fails on any import running backwards through the
+list. Top-level modules — `Basic`, `Hello`, `Lint`, `AxiomAudit` — are
+outside the order. -/
 def dirOrder : List Name :=
-  [`Retry, `Capacity, `Loop, `Queueing, `Stack, `Dynamics, `Control,
-   `Verification, `Examples]
+  [`Core, `Extras]
 
 /-- The subject directory of a module, if it has one:
-`Template.Loop.ClosedLoop` is in `Loop`, `Template.Basic` is in none. A
-module nested deeper (`Template.Loop.Sub.Mod`) is still in `Loop` — the
+`Template.Core.Base` is in `Core`, `Template.Basic` is in none. A
+module nested deeper (`Template.Core.Sub.Mod`) is still in `Core` — the
 first match was exactly three components, which silently exempted deeper
 nesting from the layer check. -/
 def dirOf : Name → Option Name
@@ -477,20 +477,20 @@ def layerFindings (edges : Array (Name × Array Name)) : Array String := Id.run 
 
 /-- The layer check must actually see a backward edge before its verdict on
 the real tree counts: run it against a constructed one every time, the same
-discipline as `selfTestLock`. Calibrated 2026-07-29 — reversing `dirOrder`
-against the real tree surfaces 52 backward edges, so the check is not
-vacuous on this library. -/
+discipline as `selfTestLock`. The template's modules are all top-level, so
+the check sees zero real edges here; this constructed-edge self-test is
+what keeps its verdict non-vacuous until your subject directories exist. -/
 def selfTestLayers : IO Unit := do
   let backward : Array (Name × Array Name) :=
-    #[(`Template.Loop.ClosedLoop, #[`Template.Control.Breaker])]
+    #[(`Template.Core.Base, #[`Template.Extras.Consumer])]
   let f := layerFindings backward
   unless f.size == 1 && (f[0]!.splitOn "is later than").length > 1 do
     throw <| IO.userError s!"layer self-test: backward edge not reported: {f}"
   -- A deeper-nested module is still in its directory: the check must see
-  -- through `Template.Loop.Sub.Mod`, which an exactly-three-components
+  -- through `Template.Core.Sub.Mod`, which an exactly-three-components
   -- `dirOf` silently exempted.
   let nested : Array (Name × Array Name) :=
-    #[(`Template.Loop.Sub.Mod, #[`Template.Control.Breaker])]
+    #[(`Template.Core.Sub.Mod, #[`Template.Extras.Consumer])]
   let n := layerFindings nested
   unless n.size == 1 && (n[0]!.splitOn "is later than").length > 1 do
     throw <| IO.userError s!"layer self-test: nested-module backward edge not reported: {n}"
@@ -499,16 +499,16 @@ def selfTestLayers : IO Unit := do
   -- nobody added to the order.
   let unlisted : Array (Name × Array Name) :=
     #[(`Template.Newdir.Mod, #[]),
-      (`Template.Loop.ClosedLoop, #[`Template.Newdir.Mod])]
+      (`Template.Core.Base, #[`Template.Newdir.Mod])]
   let u := layerFindings unlisted
   unless u.size == 2 && u.all (fun s => (s.splitOn "dirOrder").length > 1) do
     throw <| IO.userError s!"layer self-test: unlisted directory not reported: {u}"
   -- Forward, same-directory, top-level, and non-Template edges: all silent.
   let allowed : Array (Name × Array Name) :=
-    #[(`Template.Control.Breaker,
-        #[`Template.Loop.ClosedLoop, `Template.Control.Priority,
+    #[(`Template.Extras.Consumer,
+        #[`Template.Core.Base, `Template.Extras.Other,
           `Template.Basic, `Mathlib]),
-      (`Template.Basic, #[`Template.Control.Breaker])]
+      (`Template.Basic, #[`Template.Extras.Consumer])]
   let g := layerFindings allowed
   unless g.isEmpty do
     throw <| IO.userError s!"layer self-test: allowed edges reported: {g}"
@@ -703,7 +703,7 @@ unsafe def main (args : List String) : IO UInt32 := do
   -- Core vocabulary, plus external-system identifiers the examples cite
   -- as code (AWS's redrive-policy field); both are backticked
   -- legitimately and are not environment constants.
-  let allowedVocab : List String := ["Prop", "Type", "Sort", "maxReceiveCount"]
+  let allowedVocab : List String := ["Prop", "Type", "Sort"]
   let resolvesRef (ownType t : String) : Bool :=
     knownRefs.contains t || allowedVocab.contains t
       || (ownType.splitOn t).length > 1
