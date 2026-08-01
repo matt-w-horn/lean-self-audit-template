@@ -59,6 +59,10 @@ jobs:
       # would live in scripts/nolints-style.txt, which stays empty.
       - name: lint-style
         run: lake exe lint-style
+      # The Python tooling's own tests: the rename tool's word-boundary
+      # behavior and the claims writer's note validation.
+      - name: tool tests
+        run: python3 -m unittest discover -s tools/tests
 
   # Layers 2 and 3 of the self-test: the template must instantiate under
   # a different name with every gate still green, and the instantiated

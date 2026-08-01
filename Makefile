@@ -119,9 +119,14 @@ leanchecker:
 	@set -e; \
 	if [ -n "$(LEANCHECKER_WORKERS)" ]; then n="$(LEANCHECKER_WORKERS)"; \
 	else \
-	  mem_gb=$$(( $$(sysctl -n hw.memsize) / 1073741824 )); \
+	  if command -v sysctl >/dev/null 2>&1 && sysctl -n hw.memsize >/dev/null 2>&1; then \
+	    mem_gb=$$(( $$(sysctl -n hw.memsize) / 1073741824 )); \
+	    ncpu=$$(sysctl -n hw.ncpu); \
+	  else \
+	    mem_gb=$$(( $$(awk '/MemTotal/ {print $$2}' /proc/meminfo) / 1048576 )); \
+	    ncpu=$$(nproc); \
+	  fi; \
 	  n=$$(( mem_gb / 5 )); \
-	  ncpu=$$(sysctl -n hw.ncpu); \
 	  if [ "$$n" -lt 1 ]; then n=1; fi; \
 	  if [ "$$n" -gt "$$ncpu" ]; then n=$$ncpu; fi; \
 	fi; \
