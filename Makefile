@@ -14,7 +14,7 @@ SHELL := /bin/bash
 GUARD_DIFF ?= --cached
 
 .PHONY: verify build lint lint-style test tally-sync scope silencing-guard \
-	leanchecker simp-audit
+	leanchecker watcher-tools nanoda simp-audit
 
 verify: build lint lint-style test tally-sync scope
 
@@ -39,7 +39,11 @@ test:
 # import-all list, replayed into the lake test log) and the runtime driver
 # (manifest-tally, from importModules). Two printed totals with no
 # comparison between them are two unchecked numbers — the 914-vs-919
-# lesson — so compare the suffixes character-for-character.
+# lesson — so compare the suffixes character-for-character. The audit
+# count has the same shape: `inAuditedNamespace` (Template/AxiomAudit.lean)
+# and its documented copy `auditRule` (TemplateTest/Coverage.lean) each
+# print a declaration count, and the 914-vs-919 disagreement WAS those two
+# predicates drifting — so the second block compares them too.
 tally-sync:
 	@gate=$$(grep '#coverage_report: ' .verify/test.log | tail -1 | sed 's/.*#coverage_report: //'); \
 	driver=$$(grep 'manifest-tally: ' .verify/test.log | tail -1 | sed 's/.*manifest-tally: //'); \
@@ -52,6 +56,17 @@ tally-sync:
 	  exit 1; \
 	fi; \
 	echo "tally-sync: gate and driver agree — $$driver"
+	@audit=$$(grep -oE '#axiom_budget_all: [0-9]+ declarations' .verify/build.log | grep -oE '[0-9]+' | head -1); \
+	rule=$$(grep -oE 'audit-rule count [0-9]+' .verify/test.log | grep -oE '[0-9]+' | tail -1); \
+	if [ -z "$$audit" ]; then echo "tally-sync: no #axiom_budget_all count in .verify/build.log" >&2; exit 1; fi; \
+	if [ -z "$$rule" ]; then echo "tally-sync: no audit-rule count in .verify/test.log" >&2; exit 1; fi; \
+	if [ "$$audit" != "$$rule" ]; then \
+	  echo "tally-sync: build-time axiom audit and driver audit-rule counts disagree:" >&2; \
+	  echo "  #axiom_budget_all: $$audit" >&2; \
+	  echo "  audit-rule count:  $$rule" >&2; \
+	  exit 1; \
+	fi; \
+	echo "tally-sync: audit counts agree — $$audit"
 
 # Stamp the verified tree and scope the semantic passes. `git stash create`
 # snapshots tracked+staged content without touching anything; at a clean
@@ -72,10 +87,15 @@ scope:
 # that adds a gate-silencing token to the library needs a deliberate
 # sign-off (SKIP=silencing-guard), never a silent landing — the linter
 # configuration is only as strong as the review gate on changes to it.
-# Two sweeps: added .lean lines against the token list (tests/negative/ is
+# Four sweeps: added .lean lines against the token list (tests/negative/ is
 # the fixtures' home for these tokens and TemplateTest names what it scans
-# for, so both are excluded), and any touched linter line in lakefile.toml,
-# where removing an option silences it just as surely as a set_option.
+# for, so both are excluded); any touched linter line in lakefile.toml,
+# where removing an option silences it just as surely as a set_option;
+# any touched line at all in the gate carriers that nothing else watches
+# (.pre-commit-config.yaml, the workflows, Template/Lint.lean — rare-change
+# files, so the sign-off friction is a few times a month at most); and the
+# two load-bearing lines other gates rest on — checks.py's token regex and
+# AxiomAudit's axiom allowlist.
 silencing-guard:
 	@range="$(GUARD_DIFF)"; base=$${range%%...*}; \
 	if [ -n "$$base" ] && [ "$$base" != "$$range" ]; then \
@@ -86,11 +106,17 @@ silencing-guard:
 	  | grep -E '^\+[^+]' \
 	  | grep -E 'set_option +(linter|debug)\.|set_option +[A-Za-z.]*maxHeartbeats|@\[nolint|@\[implemented_by|@\[extern|^\+ *((private|protected|public|noncomputable) +)*(axiom|unsafe|partial) '; true); \
 	tomlhits=$$(git diff $(GUARD_DIFF) -U0 -- lakefile.toml | grep -E '^[-+].*linter\.'; true); \
-	if [ -n "$$hits$$tomlhits" ]; then \
-	  echo "silencing-guard: diff $(GUARD_DIFF) touches gate-silencing tokens;" >&2; \
+	gatehits=$$(git diff $(GUARD_DIFF) -U0 -- .pre-commit-config.yaml '.github/workflows/*' Template/Lint.lean \
+	  | grep -E '^[-+][^-+]'; true); \
+	surfhits=$$(git diff $(GUARD_DIFF) -U0 -- scripts/checks.py Template/AxiomAudit.lean \
+	  | grep -E '^[-+][^-+]' | grep -E 'TOKEN_RE|re\.compile| r"|allowed'; true); \
+	if [ -n "$$hits$$tomlhits$$gatehits$$surfhits" ]; then \
+	  echo "silencing-guard: diff $(GUARD_DIFF) touches gate-silencing tokens or gate files;" >&2; \
 	  echo "sign off with SKIP=silencing-guard if deliberate" >&2; \
 	  if [ -n "$$hits" ]; then echo "$$hits" >&2; fi; \
 	  if [ -n "$$tomlhits" ]; then echo "lakefile.toml linter lines:" >&2; echo "$$tomlhits" >&2; fi; \
+	  if [ -n "$$gatehits" ]; then echo "gate-carrier lines:" >&2; echo "$$gatehits" >&2; fi; \
+	  if [ -n "$$surfhits" ]; then echo "token-regex / allowlist lines:" >&2; echo "$$surfhits" >&2; fi; \
 	  exit 1; \
 	fi; \
 	echo "silencing-guard: no gate-silencing tokens in diff $(GUARD_DIFF)"
@@ -133,6 +159,69 @@ leanchecker:
 	echo "leanchecker: replaying every Template module ($$n workers)"; \
 	LEAN_NUM_THREADS=$$n lake env leanchecker -v Template; \
 	echo "leanchecker: kernel accepts every Template module"
+
+# Independent second watcher: Nanoda, a from-scratch Rust implementation
+# of the Lean kernel, checking the library's lean4export NDJSON export.
+# This is what the toolchain's own leanchecker cannot give: a kernel bug
+# replays identically there (same code, same pin), while an independent
+# implementation with its own arithmetic has to be wrong in the same way
+# at the same time. Pins: lean4export at its v4.32.0-toolchain rev with
+# this repo's lean-toolchain copied over it (the export runtime must
+# match the oleans it reads, and a patch release is source-compatible);
+# nanoda_lib at the Lean Kernel Arena's rev. The config whitelists
+# exactly the three classical axioms and hard-errors on any other; the
+# nat/string kernel extensions are nanoda's own implementations, which
+# is the point. Checkouts, config, and the export live under
+# .verify/watchers/ (gitignored). The export covers the full dependency
+# cone — Mathlib included, unlike leanchecker's trusted imports — so
+# this is a heavyweight target: run it where compute is cheap (CI, a
+# build host), not per commit.
+LEAN4EXPORT_REV := 4e7915201d3f9f04470d9eae002fa695f7cdc589
+NANODA_REV := ddfac2bf5a7b56cb46e141494427ff3dd55963c7
+WATCHERS := .verify/watchers
+
+watcher-tools:
+	@mkdir -p $(WATCHERS)
+	@if [ ! -d $(WATCHERS)/lean4export ]; then \
+	  git clone -q https://github.com/leanprover/lean4export $(WATCHERS)/lean4export; \
+	fi
+	@cd $(WATCHERS)/lean4export && git fetch -q origin && git checkout -q $(LEAN4EXPORT_REV)
+	@cp lean-toolchain $(WATCHERS)/lean4export/lean-toolchain
+	@cd $(WATCHERS)/lean4export && lake build 2>&1 | tail -1
+	@if [ ! -d $(WATCHERS)/nanoda_lib ]; then \
+	  git clone -q https://github.com/ammkrn/nanoda_lib $(WATCHERS)/nanoda_lib; \
+	fi
+	@cd $(WATCHERS)/nanoda_lib && git fetch -q origin && git checkout -q $(NANODA_REV)
+	@cd $(WATCHERS)/nanoda_lib && cargo build --release 2>&1 | tail -1
+	@printf '%s\n' \
+	  '{' \
+	  '  "use_stdin": true,' \
+	  '  "nat_extension": true,' \
+	  '  "string_extension": true,' \
+	  '  "permitted_axioms": ["propext", "Classical.choice", "Quot.sound"],' \
+	  '  "unpermitted_axiom_hard_error": true,' \
+	  '  "print_success_message": true,' \
+	  '  "num_threads": 4' \
+	  '}' > $(WATCHERS)/nanoda-config.json
+	@echo "watcher-tools: lean4export and nanoda_bin built at their pins"
+
+nanoda: watcher-tools
+	@echo "nanoda: exporting the Template cone (Mathlib included)"
+	lake env $(WATCHERS)/lean4export/.lake/build/bin/lean4export Template > $(WATCHERS)/export.ndjson
+	@wc -c < $(WATCHERS)/export.ndjson | awk '{printf "nanoda: export is %d bytes\n", $$1}'
+	@# Self-calibration on every run: a checker that accepts a corrupted
+	@# export inspects nothing, so corrupt a copy (every Nat reference
+	@# becomes Bool) and require rejection before the real verdict counts.
+	@sed 's/Nat/Bool/g' $(WATCHERS)/export.ndjson > $(WATCHERS)/doctored.ndjson
+	@if $(WATCHERS)/nanoda_lib/target/release/nanoda_bin $(WATCHERS)/nanoda-config.json \
+	    < $(WATCHERS)/doctored.ndjson >/dev/null 2>&1; then \
+	  echo "nanoda: DOCTORED export accepted — the checker inspects nothing" >&2; \
+	  exit 1; \
+	fi
+	@rm -f $(WATCHERS)/doctored.ndjson
+	@echo "nanoda: doctored export rejected (self-calibration passed)"
+	$(WATCHERS)/nanoda_lib/target/release/nanoda_bin $(WATCHERS)/nanoda-config.json < $(WATCHERS)/export.ndjson
+	@echo "nanoda: independent kernel accepts the export"
 
 # Advisory: the simpNF environment linter re-run with
 # respectTransparency, which catches more defeq abuse but may

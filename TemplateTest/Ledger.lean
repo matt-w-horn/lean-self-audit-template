@@ -28,6 +28,7 @@ def terminalLedger : List (Lean.Name × String) :=
     (`Template.double_self, "eval pin at the definition; rfl, so a consuming pin restates it — the template's worked example of a terminal entry"),
     (`Template.docBlameThmEnabled, "enabled registration of Batteries' docBlameThm; consumed by runLinter through the env_linter attribute at lint time, not by any proof"),
     (`Template.explicitVarsOfIffEnabled, "enabled registration of Batteries' explicitVarsOfIff; consumed by runLinter through the env_linter attribute at lint time, not by any proof"),
+    (`Template.silencingMarkers, "this library's linter over the environment-visible gate-silencing markers; consumed by runLinter through the env_linter attribute at lint time, not by any proof"),
   ]
 
 /-- Pairs `(target, bridge)`: `bridge` proves `target` equivalent to (or
