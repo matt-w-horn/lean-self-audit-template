@@ -96,6 +96,8 @@ def cmd_check():
 def cmd_record(name, verdict, note):
     if verdict == "accepted" and not note:
         sys.exit("claims: `accepted` requires --note (the recorded override)")
+    if note and ("|" in note or "\n" in note):
+        sys.exit("claims: --note may not contain `|` or newlines (the ledger is pipe-delimited)")
     if not MANIFEST.exists():
         sys.exit(f"claims: {MANIFEST} missing; run `lake exe templateTest` first")
     manifest = {r["name"]: r for r in json.loads(MANIFEST.read_text())}
