@@ -5,7 +5,13 @@ honesty claims stop being true. Fork it, rename `Template` to your
 library's name, and replace `Template/Hello.lean` with your first real
 module.
 
-## What the harness checks
+## The gates, in two tiers
+
+The tiers are not peers. The kernel tier is mechanical and hard-fails
+the build; the review tier is calibrated human/LLM judgment whose
+verdicts are recorded and re-checked, and it ships advisory.
+
+**Kernel tier — mechanical, hard-fail:**
 
 - **Axiom audit** (`Template/AxiomAudit.lean`, runs in `lake build`):
   every declaration is checked against `propext`/`Classical.choice`/
@@ -18,20 +24,29 @@ module.
   `lake exe templateTest --update-lock`.
 - **Coverage gate** (`TemplateTest/Gate.lean`): every declaration must be
   consumed, witnessed, pinned, bridged, or ledgered with a justification.
-- **Negative fixtures** (`tests/negative/`): ten expected-failure files.
-  Five must fail to elaborate. Five compile and must be caught by the
-  source-level proof-token scan — the gate that sees what elaboration
-  cannot, because Lean never adds an `example` to the environment.
+- **Proof-token scan** (`scripts/checks.py`): the source-level backstop
+  that sees what elaboration cannot, because Lean never adds an
+  `example` to the environment.
+- **Negative fixtures** (`tests/negative/`): ten expected-failure files,
+  five per gate family — the gates are tested against constructed
+  evasions, not assumed to bite.
 - **Scanner corpus** (`tests/positive/`): hazard shapes the scanner must
   produce zero findings on, so scanner changes cannot drift toward
   false positives.
-- **Claims ledger** (`tests/claims.lock`, advisory until you bootstrap):
-  blinded docstring-vs-statement verdicts, recorded only through
-  `scripts/claims.py`. Calibration pairs ship in
-  `tests/claims-calibration/`.
 - **Linter coverage**: every module must transitively import the
   syntax-linter carrier, so lakefile linter options are never silently
   inert.
+
+**Review tier — calibrated, evidence-carrying, advisory:**
+
+- **Claims ledger** (`tests/claims.lock`): docstring-vs-statement
+  verdicts, recorded only through `scripts/claims.py`, re-checked by
+  hash on every `lake test` run. A verdict goes stale when the
+  statement, the docstring, or a direct dependency's docstring changes.
+  Ships in `advisory` mode: findings print, nothing fails, until you
+  bootstrap a reviewed ledger and flip the mode. The reviewer is
+  pluggable — see `claims-contract.md`. Calibration pairs ship in
+  `tests/claims-calibration/`.
 
 ## Build
 

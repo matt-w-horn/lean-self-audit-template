@@ -47,7 +47,7 @@ jobs:
       # compile-time gates (axiom audit, coverage report); running it checks
       # the statement lock, the import roots, the negative fixtures, the
       # scanner corpus, and the prose-sync suite.
-      - name: test
+      - name: kernel-tier gates (lake test; the review-tier claims stage runs inside it, advisory)
         run: lake test
       # Batteries' environment linters (simp normal form, unused arguments,
       # missing docstrings, explicit iff variables, ...) over every
