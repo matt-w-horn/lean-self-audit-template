@@ -12,11 +12,11 @@ docstring or statement change. Fork it, run
 `python3 tools/rename.py YourLib`, and replace `Template/Hello.lean`
 with your first real module.
 
-Two clarifications up front. Statement locks are golden files — the new
-parts are the claims ledger, the coverage gate, and gates tested
-against constructed evasions. And this is a template rather than a Lake
-plugin because the gates are project-entangled Lean and CI; a plugin
-can come later.
+Statement locks are golden files, a familiar idea; the new parts are
+the claims ledger, the coverage gate, and gates tested against
+constructed evasions. This is a template rather than a Lake plugin
+because the gates are project-entangled Lean and CI; a plugin can come
+later.
 
 ## The gates, in two tiers
 
@@ -40,9 +40,10 @@ verdicts are recorded and re-checked, and it ships advisory.
 - **Proof-token scan** (`scripts/checks.py`): the source-level backstop
   that sees what elaboration cannot, because Lean never adds an
   `example` to the environment.
-- **Negative fixtures** (`tests/negative/`): ten expected-failure files,
-  five per gate family — the gates are tested against constructed
-  evasions, not assumed to bite.
+- **Negative fixtures** (`tests/negative/`): eleven expected-failure
+  files, five the gates must refuse to elaborate and six the
+  source-level scan must reject. The gates are tested against
+  constructed evasions, not assumed to bite.
 - **Scanner corpus** (`tests/positive/`): hazard shapes the scanner must
   produce zero findings on, so scanner changes cannot drift toward
   false positives.
@@ -58,12 +59,12 @@ verdicts are recorded and re-checked, and it ships advisory.
   statement, the docstring, or a direct dependency's docstring changes.
   Ships in `advisory` mode: findings print, nothing fails, until you
   bootstrap a reviewed ledger and flip the mode. The reviewer is
-  pluggable — see `claims-contract.md`. Calibration pairs ship in
-  `tests/claims-calibration/`. The reviewer must author elaborating
+  pluggable; see `claims-contract.md`. Fifteen calibration pairs ship
+  in `tests/claims-calibration/`. The reviewer must author elaborating
   Lean probes, and the only configurations that have passed calibration
   to date are top-tier models (Opus 5 / Fable class or equivalent) at
-  high reasoning effort — a requirement of this tier alone; the
-  kernel-tier gates need no model.
+  high reasoning effort. That requirement belongs to this tier alone;
+  the kernel-tier gates need no model.
 
 ## Build
 
@@ -84,7 +85,7 @@ alongside gitleaks and a staged-source proof-token scan.
    names in `lakefile.toml`) to your library's name.
 2. Replace `Template/Hello.lean`; register every new module in the three
    import roots (`Template.lean`, `Template/AxiomAudit.lean`,
-   `TemplateTest/Gate.lean`) — `lake test` enforces this.
+   `TemplateTest/Gate.lean`); `lake test` enforces this.
 3. Regenerate `tests/statements.lock` and replace the ledger entries in
    `TemplateTest/Ledger.lean` as your declarations land.
 4. The `instantiation` CI job (layers 2-3 of the self-test) is keyed to
@@ -109,7 +110,7 @@ alongside gitleaks and a staged-source proof-token scan.
 
 [LeanProject](https://github.com/pitmonticone/LeanProject) covers
 project setup, build, and publishing; blueprint tooling covers progress
-toward a plan. This template covers drift — statements, coverage, and
+toward a plan. This template covers drift: statements, coverage, and
 prose staying what they were verified to be. Use them together.
 
 The gates run for real in
