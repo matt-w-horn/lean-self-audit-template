@@ -56,7 +56,11 @@ verdicts are recorded and re-checked, and it ships advisory.
   Ships in `advisory` mode: findings print, nothing fails, until you
   bootstrap a reviewed ledger and flip the mode. The reviewer is
   pluggable — see `claims-contract.md`. Calibration pairs ship in
-  `tests/claims-calibration/`.
+  `tests/claims-calibration/`. The reviewer must author elaborating
+  Lean probes, and the only configurations that have passed calibration
+  to date are top-tier models (Opus 5 / Fable class or equivalent) at
+  high reasoning effort — a requirement of this tier alone; the
+  kernel-tier gates need no model.
 
 ## Build
 

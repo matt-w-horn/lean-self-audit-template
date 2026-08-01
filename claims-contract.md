@@ -72,6 +72,20 @@ first reaches the ledger; the rest carry evidence to a repair:
 | `statement-suspect` | A probe indicts the statement itself | The maintainer — statement changes are deliberate |
 | `intent-unclear` | Two substantive readings; probes cannot arbitrate | The maintainer |
 
+## Reviewer requirements
+
+The review tier is judgment, and the bar is set by the probe: a
+reviewer must author Lean that elaborates against the built library —
+constructing satisfiability instances, deleting load-bearing
+hypotheses, proving a docstring's stronger reading — not merely read
+the pair. To date, the only reviewer configurations that have passed
+calibration are top-tier models (Opus 5 / Fable class or equivalent)
+at high reasoning effort. A cheaper reviewer's verdicts count only
+after it passes the same calibration; an uncalibrated reviewer's
+verdicts count for nothing, however plausible its transcripts. This
+requirement belongs to the review tier alone — the kernel-tier gates
+are mechanical and need no model.
+
 Calibrate before trusting: `tests/claims-calibration/` ships fifteen
 (statement, docstring) pairs with an answer key. A reviewer
 configuration must flag every constructed defect with the keyed verdict
