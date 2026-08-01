@@ -25,6 +25,10 @@
 #### Template.hello_world : theorem
   Template.double 1 = 2
 
+#### Template.silencingMarkers : def
+  Batteries.Tactic.Lint.Linter
+  value-hash 5ab4be96d2e0af67
+
 #### Template.templateOmittedTokens : def
   List String
   value-hash 8487644d3f624bf

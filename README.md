@@ -40,8 +40,15 @@ verdicts are recorded and re-checked, and it ships advisory.
 - **Proof-token scan** (`scripts/checks.py`): the source-level backstop
   that sees what elaboration cannot, because Lean never adds an
   `example` to the environment.
-- **Negative fixtures** (`tests/negative/`): eleven expected-failure
-  files, five that must fail to elaborate and six the source-level scan
+- **Silencing-markers linter** (`Template/Lint.lean`, runs in
+  `lake lint`): fails on any declaration carrying a gate-silencing
+  marker (`unsafe`, `partial`, an `implemented_by` or `extern`
+  replacement, a `nolint` exemption). The library-wide complement to the
+  commit-time silencing guard, which still owns the two markers this
+  linter cannot see: an in-file `set_option` (syntax, invisible to an
+  environment linter) and a `nolint` exemption from this linter itself.
+- **Negative fixtures** (`tests/negative/`): twelve expected-failure
+  files, six that must fail to elaborate and six the source-level scan
   must reject. The gates are tested against constructed evasions, not
   assumed to bite. Each fixture is registered in `TemplateTest/Main.lean`;
   a file added to the directory and registered in neither list never runs
@@ -80,6 +87,20 @@ make verify          # every gate, then a stamp of the verified tree
 
 `make verify` is wired as a pre-commit hook (`pre-commit install`),
 alongside gitleaks and a staged-source proof-token scan.
+
+Outside the per-commit gates, two kernel re-checks are wired to run
+weekly in CI (`.github/workflows/watchers.yml`) and on demand:
+`make leanchecker` replays every module through the toolchain's own
+checker (same kernel implementation and pin as the elaborator, imports
+trusted), and `make nanoda` re-checks the full
+[lean4export](https://github.com/leanprover/lean4export) cone, Mathlib
+included, with [Nanoda](https://github.com/ammkrn/nanoda_lib), a Lean
+kernel written from scratch in Rust. The case for the second
+implementation is Leonardo de Moura's
+[Who Watches the Provers?](https://leodemoura.github.io/blog/2026-3-16-who-watches-the-provers/):
+a kernel bug replays identically in the kernel's own checker, and an
+independent implementation has to be wrong in the same way at the same
+time.
 
 ## Adopting the template
 
