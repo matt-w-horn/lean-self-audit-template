@@ -43,9 +43,10 @@ verdicts are recorded and re-checked, and it ships advisory.
 - **Silencing-markers linter** (`Template/Lint.lean`, runs in
   `lake lint`): fails on any declaration carrying a gate-silencing
   marker (`unsafe`, `partial`, an `implemented_by` or `extern`
-  replacement, a `nolint` exemption). The tree-wide complement to the
-  commit-time silencing guard, which still owns the one marker an
-  environment linter cannot see (in-file `set_option`).
+  replacement, a `nolint` exemption). The library-wide complement to the
+  commit-time silencing guard, which still owns the two markers this
+  linter cannot see: an in-file `set_option` (syntax, invisible to an
+  environment linter) and a `nolint` exemption from this linter itself.
 - **Negative fixtures** (`tests/negative/`): twelve expected-failure
   files, six that must fail to elaborate and six the source-level scan
   must reject. The gates are tested against constructed evasions, not

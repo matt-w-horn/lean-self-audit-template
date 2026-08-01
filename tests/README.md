@@ -5,7 +5,7 @@
   Only `lake exe templateTest --update-lock` regenerates it.
 - `claims.lock`: docstring-vs-statement verdicts with the hashes they
   were judged at.
-- `negative/`: eleven expected-failure fixtures. Five must fail to
+- `negative/`: twelve expected-failure fixtures. Six must fail to
   elaborate. The other six compile, and the proof-token scan must reject
   them.
 - `positive/`: `ScannerCorpus.lean`, hazard shapes the scanner must
