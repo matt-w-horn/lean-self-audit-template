@@ -1,4 +1,4 @@
-# Lean formalization template
+# lean-self-audit-template
 
 A template for a Lean 4 + Mathlib library with two tiers of honesty
 gates: a kernel tier that fails the build when a mechanical claim stops
