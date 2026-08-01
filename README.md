@@ -41,9 +41,11 @@ verdicts are recorded and re-checked, and it ships advisory.
   that sees what elaboration cannot, because Lean never adds an
   `example` to the environment.
 - **Negative fixtures** (`tests/negative/`): eleven expected-failure
-  files, five the gates must refuse to elaborate and six the
-  source-level scan must reject. The gates are tested against
-  constructed evasions, not assumed to bite.
+  files, five that must fail to elaborate and six the source-level scan
+  must reject. The gates are tested against constructed evasions, not
+  assumed to bite. Each fixture is registered in `TemplateTest/Main.lean`;
+  a file added to the directory and registered in neither list never runs
+  (see `tests/negative/README.md`).
 - **Scanner corpus** (`tests/positive/`): hazard shapes the scanner must
   produce zero findings on, so scanner changes cannot drift toward
   false positives.

@@ -4,8 +4,8 @@ Checks that read source text rather than the elaborated environment,
 plus the claims-review tooling.
 
 - `checks.py`: the proof-token scan that `lake test` shells out to, over
-  the library as its last stage and with `--scan FILE` over the negative
-  fixtures and the positive corpus.
+  the library as its last stage and with `--scan FILE` over the six
+  scanner fixtures and the positive corpus.
 - `claims.py`: the claims ledger's only writer.
 - `claim-probe.sh`: elaborates Lean read from stdin against the built
   library. It is the blinded claims review's one probe command.
