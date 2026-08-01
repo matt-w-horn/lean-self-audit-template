@@ -8,12 +8,22 @@
   Batteries.Tactic.Lint.Linter
   value-hash 61d1b116eb14b88a
 
+#### Template.double : def
+  ℕ → ℕ
+  value-hash 5a62e0e4c2d39073
+
+#### Template.double_eq_two_mul : theorem
+  ∀ (n : ℕ), Template.double n = 2 * n
+
+#### Template.double_self : theorem
+  ∀ (n : ℕ), Template.double n = n + n
+
 #### Template.explicitVarsOfIffEnabled : def
   Batteries.Tactic.Lint.Linter
   value-hash 3deaf6c01b1ffda0
 
 #### Template.hello_world : theorem
-  1 + 1 = 2
+  Template.double 1 = 2
 
 #### Template.templateOmittedTokens : def
   List String
