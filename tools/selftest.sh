@@ -46,7 +46,7 @@ printf '\n/-- Injected by selftest: must be rejected. -/\ntheorem Renamed.bad_so
 if lake build >"$WORK/3a.log" 2>&1; then
   echo "layer 3a FAIL: the audit accepted a sorry"; exit 1
 fi
-grep -qi 'sorry' "$WORK/3a.log" || { echo "layer 3a FAIL: build failed for another reason"; cat "$WORK/3a.log"; exit 1; }
+grep -q 'axiom budget exceeded.*sorryAx' "$WORK/3a.log" || { echo "layer 3a FAIL: build failed for another reason"; cat "$WORK/3a.log"; exit 1; }
 cp "$WORK/hello.bak" Renamed/Hello.lean
 echo "layer 3a PASS: sorry rejected"
 
@@ -67,7 +67,7 @@ PY
 if lake test >"$WORK/3b.log" 2>&1; then
   echo "layer 3b FAIL: the lock accepted a doctored line"; exit 1
 fi
-grep -qi 'lock' "$WORK/3b.log" || { echo "layer 3b FAIL: test failed for another reason"; cat "$WORK/3b.log"; exit 1; }
+grep -q 'FAIL \[lock\]' "$WORK/3b.log" || { echo "layer 3b FAIL: test failed for another reason"; cat "$WORK/3b.log"; exit 1; }
 cp "$WORK/lock.bak" tests/statements.lock
 echo "layer 3b PASS: doctored lock rejected"
 
