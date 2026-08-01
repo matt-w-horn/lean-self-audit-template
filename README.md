@@ -1,5 +1,8 @@
 # lean-self-audit-template
 
+[![ci](https://github.com/matt-w-horn/lean-self-audit-template/actions/workflows/ci.yml/badge.svg)](https://github.com/matt-w-horn/lean-self-audit-template/actions/workflows/ci.yml)
+![license: Apache-2.0](https://img.shields.io/badge/license-Apache--2.0-blue)
+
 A template for a Lean 4 + Mathlib library with two tiers of honesty
 gates: a kernel tier that fails the build when a mechanical claim stops
 being true (a `sorry`, a stray axiom, statement drift, an uncovered
@@ -108,6 +111,14 @@ alongside gitleaks and a staged-source proof-token scan.
 project setup, build, and publishing; blueprint tooling covers progress
 toward a plan. This template covers drift — statements, coverage, and
 prose staying what they were verified to be. Use them together.
+
+The gates run for real in
+[Overload](https://github.com/matt-w-horn/overload), the library they
+were developed in. The review tier's pluggable reviewer has a working
+implementation in
+[lean-skills](https://github.com/matt-w-horn/lean-skills): its
+`lean-claims-review` skill dispatches the blinded referees that fill a
+claims ledger like this one.
 
 ## License
 
