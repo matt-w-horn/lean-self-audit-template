@@ -24,13 +24,13 @@ The tiers are not peers. The kernel tier is mechanical and hard-fails
 the build; the review tier is calibrated human/LLM judgment whose
 verdicts are recorded and re-checked, and it ships advisory.
 
-**Kernel tier — mechanical, hard-fail:**
+**Kernel tier:**
 
 - **Axiom audit** (`Template/AxiomAudit.lean`, runs in `lake build`):
   every declaration is checked against `propext`/`Classical.choice`/
   `Quot.sound`. A `sorry`, a `native_decide`, or a custom axiom fails
   the build. The audit un-mangles `private` names, and `#omitted_audit`
-  checks that deliberately-omitted results are actually absent.
+  checks that deliberately-omitted results are absent.
 - **Statement lock** (`tests/statements.lock`, runs in `lake test`):
   every declaration's elaborated type is frozen. Removals, changes, and
   additions all fail. Regenerate deliberately with
@@ -60,7 +60,7 @@ verdicts are recorded and re-checked, and it ships advisory.
   syntax-linter carrier, so lakefile linter options are never silently
   inert.
 
-**Review tier — calibrated, evidence-carrying, advisory:**
+**Review tier:**
 
 - **Claims ledger** (`tests/claims.lock`): docstring-vs-statement
   verdicts, recorded only through `scripts/claims.py`, re-checked by
@@ -86,7 +86,8 @@ make verify          # every gate, then a stamp of the verified tree
 ```
 
 `make verify` is wired as a pre-commit hook (`pre-commit install`),
-alongside gitleaks and a staged-source proof-token scan.
+alongside gitleaks, the silencing guard, and a staged-source
+proof-token scan.
 
 Outside the per-commit gates, two kernel re-checks are wired to run
 weekly in CI (`.github/workflows/watchers.yml`) and on demand:
