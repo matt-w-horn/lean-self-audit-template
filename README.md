@@ -12,6 +12,10 @@ docstring or statement change. Fork it, run
 `python3 tools/rename.py YourLib`, and replace `Template/Hello.lean`
 with your first real module.
 
+The gates are not hypothetical: they run on every commit of
+[Overload](https://github.com/matt-w-horn/overload), a 555-theorem Lean
+library, which is where they were developed.
+
 Statement locks are golden files, a familiar idea; the new parts are
 the claims ledger, the coverage gate, and gates tested against
 constructed evasions. This is a template rather than a Lake plugin
@@ -20,9 +24,9 @@ later.
 
 ## The gates, in two tiers
 
-The tiers are not peers. The kernel tier is mechanical and hard-fails
-the build; the review tier is calibrated human/LLM judgment whose
-verdicts are recorded and re-checked, and it ships advisory.
+The kernel tier is mechanical and hard-fails the build. The review tier
+is calibrated human or LLM judgment, recorded and re-checked, and it
+ships advisory.
 
 **Kernel tier:**
 
@@ -48,17 +52,17 @@ verdicts are recorded and re-checked, and it ships advisory.
   linter cannot see: an in-file `set_option` (syntax, invisible to an
   environment linter) and a `nolint` exemption from this linter itself.
 - **Negative fixtures** (`tests/negative/`): twelve expected-failure
-  files, six that must fail to elaborate and six the source-level scan
-  must reject. The gates are tested against constructed evasions, not
-  assumed to bite. Each fixture is registered in `TemplateTest/Main.lean`;
-  a file added to the directory and registered in neither list never runs
-  (see `tests/negative/README.md`).
+  files, six that must fail to elaborate and six the proof-token scan
+  must reject. Each fixture is registered in one of the two lists in
+  `TemplateTest/Main.lean` — elaboration failures and scan rejections. A
+  file added to the directory and registered in neither never runs (see
+  `tests/negative/README.md`).
 - **Scanner corpus** (`tests/positive/`): hazard shapes the scanner must
   produce zero findings on, so scanner changes cannot drift toward
   false positives.
-- **Linter coverage**: every module must transitively import the
-  syntax-linter carrier, so lakefile linter options are never silently
-  inert.
+- **Linter coverage**: every module must transitively import the module
+  that carries Mathlib's syntax linters, so the lakefile's linter
+  options are never silently inert.
 
 **Review tier:**
 
@@ -97,16 +101,17 @@ trusted), and `make nanoda` re-checks the full
 [lean4export](https://github.com/leanprover/lean4export) cone, Mathlib
 included, with [Nanoda](https://github.com/ammkrn/nanoda_lib), a Lean
 kernel written from scratch in Rust. The case for the second
-implementation is Leonardo de Moura's
-[Who Watches the Provers?](https://leodemoura.github.io/blog/2026-3-16-who-watches-the-provers/):
-a kernel bug replays identically in the kernel's own checker, and an
-independent implementation has to be wrong in the same way at the same
-time.
+implementation: a kernel bug replays identically in the kernel's own
+checker, so an independent implementation would have to be wrong in the
+same way at the same time to hide it. That argument is Leonardo de
+Moura's, in
+[Who Watches the Provers?](https://leodemoura.github.io/blog/2026-3-16-who-watches-the-provers/)
 
 ## Adopting the template
 
-1. Rename `Template`/`TemplateTest` (directories, `Template.lean`, the
-   names in `lakefile.toml`) to your library's name.
+1. Run `python3 tools/rename.py YourLib`. It renames the
+   `Template`/`TemplateTest` directories, `Template.lean`, and the names
+   in `lakefile.toml`.
 2. Replace `Template/Hello.lean`; register every new module in the three
    import roots (`Template.lean`, `Template/AxiomAudit.lean`,
    `TemplateTest/Gate.lean`); `lake test` enforces this.
@@ -118,7 +123,7 @@ time.
 
 ## What routine changes cost
 
-- **A statement change** is deliberate by design: the lock fails, you
+- **A statement change** is meant to be loud: the lock fails, you
   re-record with `lake exe templateTest --update-lock`, and any claims
   rows over the changed statements go stale (re-review or re-record
   them through `scripts/claims.py`).
@@ -130,17 +135,14 @@ time.
   `make verify` afterward, and the staged-source proof-token scan still
   runs either way.
 
-## Beside the neighbors
+## How it compares
 
 [LeanProject](https://github.com/pitmonticone/LeanProject) covers
 project setup, build, and publishing; blueprint tooling covers progress
 toward a plan. This template covers drift: statements, coverage, and
 prose staying what they were verified to be. Use them together.
 
-The gates run for real in
-[Overload](https://github.com/matt-w-horn/overload), the library they
-were developed in. The review tier's pluggable reviewer has a working
-implementation in
+The review tier's pluggable reviewer has a working implementation in
 [lean-skills](https://github.com/matt-w-horn/lean-skills): its
 `lean-claims-review` skill dispatches the blinded referees that fill a
 claims ledger like this one.
